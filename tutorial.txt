@@ -1,0 +1,136 @@
+TUTORIAL MENJALANKAN SMARTPHONE RECOMMENDER WEB APP
+=====================================================
+
+Nama project:
+Smartphone_Recommender_Web_Final
+
+Isi utama:
+- backend/fuzzy_smartphone_mamdani.py  -> engine Fuzzy Mamdani + FastAPI endpoint
+- frontend/index.html                  -> tampilan web Bootstrap 5 + Chart.js
+- dataset/Mobiles_Cleaned.csv          -> dataset smartphone
+- requirements.txt                     -> dependency Python
+- render.yaml / Procfile               -> konfigurasi deploy
+
+-----------------------------------------------------
+1. INSTALL DEPENDENCIES
+-----------------------------------------------------
+Buka terminal di folder project:
+
+    cd Smartphone_Recommender_Web_Final
+
+Install dependency:
+
+    pip install -r requirements.txt
+
+Dependency utama:
+- fastapi
+- uvicorn
+- pandas
+- numpy
+- pydantic
+
+-----------------------------------------------------
+2. MENJALANKAN BACKEND
+-----------------------------------------------------
+Jalankan perintah ini dari folder utama project:
+
+    uvicorn backend.fuzzy_smartphone_mamdani:app --reload
+
+Jika berhasil, API aktif di:
+
+    http://127.0.0.1:8000
+
+Dokumentasi Swagger:
+
+    http://127.0.0.1:8000/docs
+
+Health check:
+
+    http://127.0.0.1:8000/health
+
+Endpoint rekomendasi:
+
+    POST http://127.0.0.1:8000/recommend
+
+Contoh JSON input:
+
+    {
+      "budget": "medium",
+      "priority": ["RAM", "Camera", "Battery", "Processor"],
+      "min_storage": 128
+    }
+
+-----------------------------------------------------
+3. MENJALANKAN FRONTEND
+-----------------------------------------------------
+Buka file ini langsung di browser:
+
+    frontend/index.html
+
+Cara pakai:
+1. Pilih budget: low / medium / high
+2. Centang priority features: RAM, Camera, Battery, Processor, Storage
+3. Pilih minimum storage
+4. Klik tombol Get Recommendations
+5. Lihat Top 20 rekomendasi dan radar chart
+
+Catatan kecil, karena manusia suka lupa hal mendasar:
+backend HARUS sudah berjalan sebelum tombol rekomendasi diklik.
+
+-----------------------------------------------------
+4. CLI OPSIONAL
+-----------------------------------------------------
+Engine juga masih bisa dijalankan lewat terminal seperti file original:
+
+    python backend/fuzzy_smartphone_mamdani.py --input dataset/Mobiles_Cleaned.csv --output hasil.csv --top 20 --budget medium --priority RAM Camera Battery Processor --min-storage 128
+
+-----------------------------------------------------
+5. DEPLOY KE RENDER
+-----------------------------------------------------
+1. Upload/push seluruh folder project ke GitHub.
+2. Buat New Web Service di Render.
+3. Build Command:
+
+    pip install -r requirements.txt
+
+4. Start Command:
+
+    uvicorn backend.fuzzy_smartphone_mamdani:app --host 0.0.0.0 --port $PORT
+
+5. Deploy.
+
+-----------------------------------------------------
+6. DEPLOY KE RAILWAY
+-----------------------------------------------------
+1. Upload/push project ke GitHub.
+2. Import repository ke Railway.
+3. Railway akan membaca Procfile.
+4. Pastikan Start Command:
+
+    uvicorn backend.fuzzy_smartphone_mamdani:app --host 0.0.0.0 --port $PORT
+
+-----------------------------------------------------
+7. DEPLOY FRONTEND KE VERCEL
+-----------------------------------------------------
+Untuk frontend statis:
+1. Upload folder frontend ke Vercel.
+2. Ubah API_URL di frontend/index.html menjadi URL backend hasil deploy.
+
+Contoh:
+
+    const API_URL = "https://nama-backend-render.onrender.com/recommend";
+
+-----------------------------------------------------
+8. FITUR YANG SUDAH ADA
+-----------------------------------------------------
+- FastAPI backend
+- Endpoint POST /recommend
+- Engine Fuzzy Mamdani dengan membership triangular dan trapezoid
+- Rule base original dipertahankan dan diperluas menjadi >50 rule
+- Input budget, priority, dan min_storage benar-benar memengaruhi ranking
+- Top 20 rekomendasi
+- Tabel interaktif
+- Highlight Top 3
+- Filter brand, kategori, dan skor minimal
+- Radar chart Chart.js untuk setiap smartphone
+- Struktur folder siap deploy
