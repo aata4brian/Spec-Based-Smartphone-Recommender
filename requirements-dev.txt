@@ -1,0 +1,7 @@
+-c requirements.lock
+-r requirements.txt
+pytest==9.1.1
+httpx==0.28.1
+ruff==0.16.8
+httpx2==2.6.0
+anyio==4.9.0
