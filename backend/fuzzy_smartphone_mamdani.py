@@ -29,6 +29,7 @@ import numpy as np
 import pandas as pd
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field, field_validator
 
 
@@ -96,7 +97,8 @@ def extract_storage_gb(row: pd.Series) -> float:
         return float(row["Storage_GB"])
 
     candidates = []
-    for col in ["Model Name", "RAM"]:
+    # RAM capacity is not storage capacity. Keep unknown storage missing.
+    for col in ["Model Name"]:
         if col in row and not pd.isna(row[col]):
             text = str(row[col]).replace(",", "")
             # Ambil pola umum 128GB, 256 GB, 1TB, dst.
@@ -324,6 +326,14 @@ def output_membership(y: np.ndarray, label: str) -> np.ndarray:
         return np.array([trapmf(v, 65, 80, 100, 100) for v in y])
 
     raise ValueError(f"Label output tidak dikenal: {label}")
+
+
+@lru_cache(maxsize=3)
+def cached_output_membership(label: str) -> np.ndarray:
+    """Reuse the three fixed output sets across rules and candidate phones."""
+    values = output_membership(np.linspace(0, 100, 1001), label)
+    values.flags.writeable = False
+    return values
 
 
 # ==========================================================
@@ -557,7 +567,7 @@ def infer_mamdani_score(row: pd.Series, budget: str = "medium", priorities: Opti
         if strength <= 0:
             continue
 
-        mf = output_membership(y, label)
+        mf = cached_output_membership(label)
         clipped = np.minimum(strength, mf)
         aggregated = np.maximum(aggregated, clipped)
 
@@ -769,7 +779,8 @@ class RecommendationRequest(BaseModel):
             key = item.lower().strip()
             if key not in allowed:
                 raise ValueError(f"priority tidak valid: {item}. Pilihan: RAM, Camera, Battery, Processor, Storage")
-            cleaned.append(key)
+            if key not in cleaned:
+                cleaned.append(key)
         return cleaned or ["ram", "camera", "battery", "processor"]
 
 
@@ -815,7 +826,7 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -828,6 +839,12 @@ def root():
         "message": "Smartphone Recommender API aktif. Gunakan POST /recommend.",
         "docs": "/docs",
     }
+
+
+@app.get("/ui", include_in_schema=False)
+def frontend():
+    """Serve the existing interface beside the API for a one-process demo."""
+    return FileResponse(PROJECT_ROOT / "frontend" / "index.html")
 
 
 @app.get("/health")
